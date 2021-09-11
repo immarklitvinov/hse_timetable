@@ -4,7 +4,9 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 import pandas as pd
+from styleframe import StyleFrame
 import datetime
+
 
 class exercise():
     def __init__(self):
@@ -23,8 +25,12 @@ class exercise():
         return f'{self.location}\n{self.time} {self.type}\n{self.subject}'
 
 
-people = ['Кокова Полина Дмитриевна', 'Шерман Лея Александровна']
-weekly_keys = ['пн1', 'пн2', 'пн3', 'пн4', 'пн5', 'пн6', 'пн7', 'вт1', 'вт2', 'вт3', 'вт4', 'вт5', 'вт6', 'вт7', 'ср1',
+people_file = open('people.txt', 'r')
+people_text = people_file.read()
+#  people = ['Кокова Полина Дмитриевна', 'Шерман Лея Александровна']
+people = people_text.split('\n\n')
+weekly_keys = ['Имя', 'пн1', 'пн2', 'пн3', 'пн4', 'пн5', 'пн6', 'пн7', 'вт1', 'вт2', 'вт3', 'вт4', 'вт5', 'вт6', 'вт7',
+               'ср1',
                'ср2', 'ср3', 'ср4', 'ср5', 'ср6', 'ср7', 'чт1', 'чт2', 'чт3',
                'чт4', 'чт5', 'чт6', 'чт7', 'пт1', 'пт2', 'пт3', 'пт4', 'пт5', 'пт6', 'пт7', 'сб1', 'сб2', 'сб3', 'сб4',
                'сб5', 'сб6', 'сб7', 'вс1', 'вс2', 'вс3', 'вс4', 'вс5', 'вс6', 'вс7']
@@ -88,6 +94,7 @@ for person in people:
 
     for elem in week:
         week_dict[elem.day + elem.number[0]] = str(elem)
+    week_dict['Имя'] = person
 
     arr.append(week_dict)
 
@@ -97,12 +104,16 @@ df.index = people
 my_date = datetime.date.today()
 year, week_num, day_of_week = my_date.isocalendar()
 
-writer = pd.ExcelWriter('output.xlsx', engine='xlsxwriter')
-df.to_excel(writer, index=False, header=f'Week №{week_num}', sheet_name='Timetable')
-workbook = writer.book
-worksheet = writer.sheets['report']
+excel_writer = StyleFrame.ExcelWriter('example.xlsx')
+sf = StyleFrame(df)
+sf.set_column_width(columns=weekly_keys,
+                    width=45)
+sf.to_excel(
+    excel_writer=excel_writer,
+    header=f'Week №{week_num}',
+    sheet_name='Timetable'
+)
+excel_writer.save()
 
-
-sleep(10)
-
+sleep(3)
 driver.close()
