@@ -133,6 +133,5 @@ sf.to_excel(
 )
 excel_writer.save()
 
-
 sleep(3)
 driver.close()
