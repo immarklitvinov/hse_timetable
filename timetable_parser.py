@@ -27,8 +27,7 @@ class exercise():
 
 people_file = open('people.txt', 'r')
 people_text = people_file.read()
-#  people = ['Кокова Полина Дмитриевна', 'Шерман Лея Александровна']
-people = people_text.split('\n\n')
+people = ['Литвинов Марк Николаевич'] + sorted(people_text.split('\n\n'))
 weekly_keys = ['Имя', 'пн1', 'пн2', 'пн3', 'пн4', 'пн5', 'пн6', 'пн7', 'вт1', 'вт2', 'вт3', 'вт4', 'вт5', 'вт6', 'вт7',
                'ср1',
                'ср2', 'ср3', 'ср4', 'ср5', 'ср6', 'ср7', 'чт1', 'чт2', 'чт3',
@@ -40,15 +39,13 @@ option = webdriver.ChromeOptions()
 option.add_argument("-incognito")
 
 driver = webdriver.Chrome(PATH, options=option)
-
+driver.get('https://ruz.hse.ru/ruz/main')
 arr = []  # weekly timetable
+sleep(3)
 
 for person in people:
 
     week = []
-    driver.get('https://ruz.hse.ru/ruz/main')
-    sleep(1)
-
     xbutt = driver.find_elements_by_xpath("//button[@class='btn btn-outline-danger mt-3 clear-filter']")[0].click()
     driver.find_element(By.XPATH, '//button[text()=" Студент "]').click()
     personname = driver.find_elements_by_id("autocomplete-student")[0]
@@ -74,17 +71,23 @@ for person in people:
             ex.date = soup.find_all('div', class_='day')[0].get_text() + " " + \
                       soup.find_all('div', class_='month')[0].get_text()  # the day_month
             ex.day = soup.find_all('div', class_='week')[0].get_text()  # day of the week
+            ex.type = soup.find_all('div', class_='text-muted kind ng-star-inserted')[0].get_text()
         except IndexError:
-            ex.date = week[-1].date  # the day_month
-            ex.day = week[-1].day  # day of the week
-        ex.time = soup.find_all('div', class_='time')[0].get_text()  # time
-        ex.number = soup.find_all('small')[0].get_text()
-        ex.location = soup.find_all('span', class_='auditorium')[0].get_text() + " " + \
-                      soup.find_all('span', class_='mr-2 text-muted ng-star-inserted')[0].get_text()
-        ex.subject = soup.find_all('span', class_='ng-star-inserted')[0].get_text()
-        ex.type = soup.find_all('div', class_='text-muted kind ng-star-inserted')[0].get_text()
-        ex.group = soup.find_all('div', class_='group ng-star-inserted')[0].get_text()
-        ex.teacher = soup.find_all('div', class_='lecturer')[0].get_text()
+            try:
+                ex.date = week[-1].date  # the day_month
+                ex.day = week[-1].day  # day of the week
+            except IndexError:
+                continue
+        try:
+            ex.time = soup.find_all('div', class_='time')[0].get_text()  # time
+            ex.number = soup.find_all('small')[0].get_text()
+            ex.location = soup.find_all('span', class_='auditorium')[0].get_text() + " " + \
+                          soup.find_all('span', class_='mr-2 text-muted ng-star-inserted')[0].get_text()
+            ex.subject = soup.find_all('span', class_='ng-star-inserted')[0].get_text()
+            ex.group = soup.find_all('div', class_='group ng-star-inserted')[0].get_text()
+            ex.teacher = soup.find_all('div', class_='lecturer')[0].get_text()
+        except IndexError:
+            pass
 
         week.append(ex)
 
@@ -99,21 +102,37 @@ for person in people:
     arr.append(week_dict)
 
 df = pd.DataFrame(arr)
-df.index = people
 
 my_date = datetime.date.today()
 year, week_num, day_of_week = my_date.isocalendar()
 
-excel_writer = StyleFrame.ExcelWriter('example.xlsx')
+excel_writer = StyleFrame.ExcelWriter(f'results/{week_num}.xlsx')
 sf = StyleFrame(df)
-sf.set_column_width(columns=weekly_keys,
-                    width=45)
+sf.set_column_width(columns=weekly_keys, width=45)
+
 sf.to_excel(
     excel_writer=excel_writer,
     header=f'Week №{week_num}',
     sheet_name='Timetable'
 )
 excel_writer.save()
+
+df = pd.DataFrame(arr)
+
+my_date = datetime.date.today()
+year, week_num, day_of_week = my_date.isocalendar()
+
+excel_writer = StyleFrame.ExcelWriter(f'results/{week_num}.xlsx')
+sf = StyleFrame(df)
+sf.set_column_width(columns=weekly_keys, width=45)
+
+sf.to_excel(
+    excel_writer=excel_writer,
+    header=f'Week №{week_num}',
+    sheet_name='Timetable'
+)
+excel_writer.save()
+
 
 sleep(3)
 driver.close()
